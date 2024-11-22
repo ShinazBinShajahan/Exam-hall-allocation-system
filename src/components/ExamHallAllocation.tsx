@@ -411,53 +411,52 @@ export default function ExamHallAllocation() {
   const printAllocation = (allocation: Allocation) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
-      printWindow.document.write(
-        "<html><head><title>Exam Hall Allocation</title></head><body>"
-      );
-      printWindow.document.write(
-        `<h1>Room ${allocation.roomNumber}${
-          allocation.classroomName ? ` - ${allocation.classroomName}` : ""
-        }</h1>`
-      );
-      printWindow.document.write(
-        `<p>Total Students: ${allocation.totalStudents}</p>`
-      );
-      printWindow.document.write(
-        `<p>Allocated Subjects: ${Array.from(allocation.allocatedSubjects).join(
-          ", "
-        )}</p>`
-      );
-      printWindow.document.write(
-        `<p>Allocated Batches: ${Array.from(allocation.allocatedBatches).join(
-          ", "
-        )}</p>`
-      );
-      printWindow.document.write(
-        '<table border="1" style="border-collapse: collapse;">'
-      );
-      printWindow.document.write("<tr><th></th>");
-      for (let i = 0; i < allocation.seats[0].length; i++) {
-        printWindow.document.write(`<th>${i + 1}</th>`);
-      }
-      printWindow.document.write("</tr>");
-      allocation.seats.forEach((row, rowIndex) => {
-        printWindow.document.write("<tr>");
-        printWindow.document.write(`<th>${rowIndex + 1}</th>`);
-        row.forEach((seat) => {
-          printWindow.document.write("<td>");
-          if (seat.studentId) {
-            printWindow.document.write(
-              `ID: ${seat.studentId}<br>${seat.subjectCode}<br>${seat.batchName}`
-            );
-          } else {
-            printWindow.document.write("-");
-          }
-          printWindow.document.write("</td>");
-        });
-        printWindow.document.write("</tr>");
-      });
-      printWindow.document.write("</table>");
-      printWindow.document.write("</body></html>");
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Exam Hall Allocation</title>
+            <style>
+              body { font-family: Arial, sans-serif; }
+              table { border-collapse: collapse; width: 100%; }
+              th, td { border: 1px solid black; padding: 8px; text-align: center; width: 40px; height: 40px; }
+              th { background-color: #f2f2f2; }
+            </style>
+          </head>
+          <body>
+            <h1>Room ${allocation.roomNumber}${
+        allocation.classroomName ? ` - ${allocation.classroomName}` : ""
+      }</h1>
+            <p>Total Students: ${allocation.totalStudents}</p>
+            <p>Allocated Subjects: ${Array.from(
+              allocation.allocatedSubjects
+            ).join(", ")}</p>
+            <p>Allocated Batches: ${Array.from(
+              allocation.allocatedBatches
+            ).join(", ")}</p>
+            <table>
+              <tr>
+                <th></th>
+                ${Array.from(
+                  { length: allocation.seats[0].length },
+                  (_, i) => `<th>${i + 1}</th>`
+                ).join("")}
+              </tr>
+              ${allocation.seats
+                .map(
+                  (row, rowIndex) => `
+                <tr>
+                  <th>${rowIndex + 1}</th>
+                  ${row
+                    .map((seat) => `<td>${seat.studentId || "-"}</td>`)
+                    .join("")}
+                </tr>
+              `
+                )
+                .join("")}
+            </table>
+          </body>
+        </html>
+      `);
       printWindow.document.close();
       printWindow.print();
     }
@@ -658,7 +657,7 @@ export default function ExamHallAllocation() {
                   ))}
                 </div>
                 <Button
-                  className="mt-4 bg-green-600 text-white hover:bg-green-800"
+                  className="mt-4 bg-blue-700 text-white hover:bg-blue-800"
                   onClick={allocateSeats}
                 >
                   Allocate Seats
