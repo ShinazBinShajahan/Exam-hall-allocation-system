@@ -258,7 +258,12 @@ export default function ExamHallAllocation() {
       theme: "grid",
       styles: { cellPadding: 2, fontSize: 8, cellWidth: "wrap" },
       columnStyles: { 0: { cellWidth: "auto" } },
-      didDrawCell: (data: { section: string; column: { index: number; }; row: { index: number; }; cell: { x: number; y: number; }; }) => {
+      didDrawCell: (data: {
+        section: string;
+        column: { index: number };
+        row: { index: number };
+        cell: { x: number; y: number };
+      }) => {
         if (data.section === "body" && data.column.index === 0) {
           pdf.setFontSize(8);
           pdf.text(`${data.row.index + 1}`, data.cell.x + 2, data.cell.y + 4);
@@ -271,64 +276,161 @@ export default function ExamHallAllocation() {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
-        <html>
-          <head>
-            <title>Allocation for ${allocation.roomNumber}</title>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              table { border-collapse: collapse; width: 100%; }
-              th, td { border: 1px solid black; padding: 5px; text-align: center; }
-            </style>
-          </head>
-          <body>
-            <h1>${allocation.roomNumber} - ${allocation.classroomName}</h1>
-            <p>Total Students: ${allocation.totalStudents}</p>
-            <p>Subjects: ${Array.from(allocation.allocatedSubjects).join(
-              ", "
-            )}</p>
-            <p>Batches: ${Array.from(allocation.allocatedBatches).join(
-              ", "
-            )}</p>
-            <table>
-              <thead>
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allocation for ${allocation.roomNumber}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px; /* Added margin for cleaner appearance on print */
+            padding: 0;
+            line-height: 1.3;
+            color: #000;
+            font-size: 10pt;
+            background: #fff;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px 0;
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+        }
+
+        main {
+            padding: 10px;
+            margin: 0 auto;
+            width: calc(100% - 40px); /* Adjusted to account for body margins */
+        }
+
+        h1 {
+            font-size: 1.6em;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .details {
+            font-size: 1rem;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            table-layout: auto;
+            font-size: 10pt;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            word-wrap: break-word;
+            background: #fff;
+        }
+
+        th {
+            border-bottom: 2px solid #000;
+        }
+
+        td {
+            line-height: 1.4;
+        }
+
+        td:empty {
+            height: 50px; /* Increased empty height for better spacing */
+        }
+
+        th:first-child, td:first-child {
+            width: 40px;
+        }
+
+        .footer {
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid #000;
+            font-size: 0.8em;
+            margin-top: 20px;
+        }
+
+        a {
+            color: #000;
+            text-decoration: none;
+        }
+
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                margin: 20px;
+                font-size: 10pt;
+            }
+
+            header, .footer {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Room Number : ${allocation.roomNumber} ${
+        allocation.classroomName ? ` - ${allocation.classroomName}` : ""
+      }</h1>
+    </header>
+    <main>
+        <p class="details">Total Students: ${
+          allocation.totalStudents
+        } | Subjects: ${Array.from(allocation.allocatedSubjects).join(
+        ", "
+      )} | <br> Batches: ${Array.from(allocation.allocatedBatches).join(", ")}</p>
+        <table>
+            <thead>
                 <tr>
-                  <th></th>
-                  ${allocation.seats[0]
-                    .map((_, colIndex) => `<th>${colIndex + 1}</th>`)
-                    .join("")}
+                    <th></th>
+                    ${allocation.seats[0]
+                      .map((_, colIndex) => `<th>${colIndex + 1}</th>`)
+                      .join("")}
                 </tr>
-              </thead>
-              <tbody>
+            </thead>
+            <tbody>
                 ${allocation.seats
                   .map(
                     (row, rowIndex) => `
-                  <tr>
-                    <th>${rowIndex + 1}</th>
-                    ${row
-                      .map(
-                        (seat) => `
-                      <td>
-                        ${
-                          seat
-                            ? `
-                          ID: ${seat.studentId}<br>
-                          Subject: ${seat.subjectCode}<br>
-                          Batch: ${seat.batchName}
-                        `
-                            : ""
-                        }
-                      </td>
+                        <tr>
+                            <th>${rowIndex + 1}</th>
+                            ${row
+                              .map(
+                                (seat) => `
+                                    <td>
+                                        ${seat ? `${seat.studentId}` : ""}
+                                    </td>
+                                `
+                              )
+                              .join("")}
+                        </tr>
                     `
-                      )
-                      .join("")}
-                  </tr>
-                `
                   )
                   .join("")}
-              </tbody>
-            </table>
-          </body>
-        </html>
+            </tbody>
+        </table>
+    </main>
+    <div class="footer">
+        *Timetable generated using <a href="http://www.generator.com" target="_blank">www.generator.com</a>, visit the link to view seat allocations online.
+    </div>
+</body>
+</html>
+
       `);
       printWindow.document.close();
       printWindow.print();
