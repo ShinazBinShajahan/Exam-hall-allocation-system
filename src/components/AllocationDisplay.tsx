@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 
-type Allocation = {
+export type Allocation = {
   roomNumber: string;
   classroomName: string;
   seats: Array<{
@@ -49,23 +49,23 @@ export default function AllocationDisplay({
             <CardHeader
               className={`${
                 isDHRoom ? "bg-blue-100" : "bg-gray-100"
-              } flex justify-between items-center`}
+              } flex flex-col sm:flex-row justify-between items-start sm:items-center`}
             >
-              <CardTitle className="text-lg text-blue-700">
+              <CardTitle className="text-lg text-blue-700 mb-2 sm:mb-0">
                 Room {allocation.roomNumber}
                 {allocation.classroomName && ` - ${allocation.classroomName}`}
                 {isDHRoom && (
-                  <span className="ml-2 text-sm font-normal text-blue-600">
+                  <span className="block sm:inline ml-0 sm:ml-2 text-sm font-normal text-blue-600">
                     (Adjacent columns can have the same subjects)
                   </span>
                 )}
               </CardTitle>
-              <div className="space-x-2">
+              <div className="space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button
                   onClick={() => downloadVenuePDF(allocation)}
                   variant="outline"
                   size="sm"
-                  className="border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white"
+                  className="w-full sm:w-auto border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download PDF
                 </Button>
@@ -73,7 +73,7 @@ export default function AllocationDisplay({
                   onClick={() => printAllocation(allocation)}
                   variant="outline"
                   size="sm"
-                  className="border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white"
+                  className="w-full sm:w-auto border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white"
                 >
                   <Printer className="mr-2 h-4 w-4" /> Print
                 </Button>
@@ -117,9 +117,9 @@ export default function AllocationDisplay({
                         <TableCell className="font-semibold text-center w-16 h-16 text-blue-700">
                           {rowIndex + 1}
                         </TableCell>
-                        {row.map((seat, colIndex) => (
-                          <TableCell key={colIndex} className="p-2 w-16 h-16">
-                            {seat.subjectCode && seat.studentId ? (
+                        {row.map((seat, seatIndex) => (
+                          <TableCell key={seatIndex} className="p-2 w-16 h-16">
+                            {seat ? (
                               <div className="text-center">
                                 <div className="text-sm font-semibold text-blue-700">
                                   ID: {seat.studentId}
