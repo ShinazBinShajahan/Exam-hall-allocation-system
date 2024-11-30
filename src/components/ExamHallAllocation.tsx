@@ -103,7 +103,7 @@ export default function ExamHallAllocation() {
     }
 
     const newAllocations: Allocation[] = []
-    let remainingStudents = subjects.flatMap(subject =>
+    const remainingStudents = subjects.flatMap(subject =>
       subject.students.map(student => ({
         subjectCode: subject.code,
         subjectName: subject.name,
