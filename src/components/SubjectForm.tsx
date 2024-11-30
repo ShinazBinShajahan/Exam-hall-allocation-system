@@ -1,70 +1,113 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState, useEffect, useCallback } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import * as XLSX from 'xlsx'
+
+type Student = {
+  id: string
+  name: string
+}
 
 type Subject = {
-  code: string;
-  name: string;
-  batchName: string;
-  students: number;
-  studentIds: string[];
-};
+  code: string
+  name: string
+  batchName: string
+  students: number
+  studentData: Student[]
+}
 
 type SubjectFormProps = {
-  addSubject: (subject: Subject) => void;
-  editingSubject: Subject | null;
-  onEditComplete: () => void;
-};
+  addSubject: (subject: Subject) => void
+  editingSubject: Subject | null
+  onEditComplete: () => void
+}
 
-export default function SubjectForm({
-  addSubject,
-  editingSubject,
-  onEditComplete,
-}: SubjectFormProps) {
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [batchName, setBatchName] = useState("");
-  const [students, setStudents] = useState("");
-  const [studentIds, setStudentIds] = useState("");
+export default function SubjectForm({ addSubject, editingSubject, onEditComplete }: SubjectFormProps) {
+  const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [batchName, setBatchName] = useState('')
+  const [studentData, setStudentData] = useState<Student[]>([])
+  const [file, setFile] = useState<File | null>(null)
+  const [newStudentId, setNewStudentId] = useState('')
+  const [newStudentName, setNewStudentName] = useState('')
 
   useEffect(() => {
     if (editingSubject) {
-      setCode(editingSubject.code);
-      setName(editingSubject.name);
-      setBatchName(editingSubject.batchName);
-      setStudents(editingSubject.students.toString());
-      setStudentIds(editingSubject.studentIds.join(", "));
+      setCode(editingSubject.code)
+      setName(editingSubject.name)
+      setBatchName(editingSubject.batchName)
+      setStudentData(editingSubject.studentData)
+    } else {
+      setCode('')
+      setName('')
+      setBatchName('')
+      setStudentData([])
     }
-  }, [editingSubject]);
+  }, [editingSubject])
+
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setFile(file)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+        const sheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[sheetName]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: ['id', 'name'] })
+        setStudentData(jsonData.slice(1) as Student[]) // Assuming first row is header
+      }
+      reader.readAsArrayBuffer(file)
+    }
+  }, [])
+
+  const removeUploadedFile = useCallback(() => {
+    setFile(null)
+    setStudentData([])
+  }, [])
+
+  const handleStudentDataChange = useCallback((index: number, field: keyof Student, value: string) => {
+    setStudentData(prevData => {
+      const newData = [...prevData]
+      newData[index] = { ...newData[index], [field]: value }
+      return newData
+    })
+  }, [])
+
+  const removeStudent = useCallback((index: number) => {
+    setStudentData(prevData => prevData.filter((_, i) => i !== index))
+  }, [])
+
+  const addNewStudent = useCallback(() => {
+    if (newStudentId && newStudentName) {
+      setStudentData(prevData => [...prevData, { id: newStudentId, name: newStudentName }])
+      setNewStudentId('')
+      setNewStudentName('')
+    }
+  }, [newStudentId, newStudentName])
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (code && name && batchName && students && studentIds) {
-      const studentIdArray = studentIds
-        .split(/[\s,]+/)
-        .filter((id) => id.trim() !== "");
-      if (parseInt(students, 10) !== studentIdArray.length) {
-        alert(
-          `Mismatch: ${studentIdArray.length} student IDs entered, but ${students} students specified.`
-        );
-        return;
-      }
-      addSubject({
-        code,
-        name,
-        batchName,
-        students: parseInt(students, 10),
-        studentIds: studentIdArray,
-      });
-      setCode("");
-      setName("");
-      setBatchName("");
-      setStudents("");
-      setStudentIds("");
-      if (editingSubject) onEditComplete();
+    e.preventDefault()
+    const newSubject: Subject = {
+      code,
+      name,
+      batchName,
+      students: studentData.length,
+      studentData
     }
-  };
+    addSubject(newSubject)
+    setCode('')
+    setName('')
+    setBatchName('')
+    setStudentData([])
+    setFile(null)
+    if (editingSubject) {
+      onEditComplete()
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,9 +117,7 @@ export default function SubjectForm({
           id="code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Enter subject code"
           required
-          className="mt-1"
         />
       </div>
       <div>
@@ -85,9 +126,7 @@ export default function SubjectForm({
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Enter subject name"
           required
-          className="mt-1"
         />
       </div>
       <div>
@@ -96,75 +135,81 @@ export default function SubjectForm({
           id="batchName"
           value={batchName}
           onChange={(e) => setBatchName(e.target.value)}
-          placeholder="Enter batch name"
           required
-          className="mt-1"
         />
       </div>
       <div>
-        <Label htmlFor="students">Number of Students</Label>
+        <Label htmlFor="studentData">Upload Student Data (Excel file)</Label>
         <Input
-          id="students"
-          type="number"
-          value={students}
-          onChange={(e) => setStudents(e.target.value)}
-          placeholder="Enter number of students"
-          required
+          id="studentData"
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
           className="mt-1"
         />
       </div>
-      <div>
-        <Label htmlFor="studentIds">Student IDs (paste from Excel)</Label>
-        <textarea
-          id="studentIds"
-          value={studentIds}
-          onChange={(e) => {
-            setStudentIds(e.target.value);
-            const ids = e.target.value
-              .split(/[\s,]+/)
-              .filter((id) => id.trim() !== "");
-            setStudents(ids.length.toString());
-          }}
-          placeholder="Paste student IDs here, one per line or comma-separated"
-          className="w-full h-32 mt-1 px-3 py-2 bg-background text-foreground border border-input rounded-md"
-          required
-        />
-      </div>
-      {studentIds.trim() !== "" && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Parsed Student IDs</h3>
-          <div className="border border-input rounded-md max-h-64 overflow-y-scroll">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 bg-muted text-black font-bold text-left">
-                    Student ID
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {studentIds
-                  .split(/[\s,]+/)
-                  .filter((id) => id.trim() !== "")
-                  .map((id, index) => (
-                    <tr
-                      key={index}
-                      className={index % 2 === 0 ? "bg-background" : "bg-muted"}
-                    >
-                      <td className="px-4 py-2">{id}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+      {file && (
+        <div>
+          <p>Uploaded file: {file.name}</p>
+          <Button type="button" onClick={removeUploadedFile} variant="destructive" size="sm">
+            Remove File
+          </Button>
         </div>
       )}
-      <Button
-        type="submit"
-        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-105"
-      >
-        {editingSubject ? "Update Subject" : "Add Subject"}
+      {studentData.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Student Data Preview</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {studentData.map((student, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <Input
+                      value={student.id}
+                      onChange={(e) => handleStudentDataChange(index, 'id', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={student.name}
+                      onChange={(e) => handleStudentDataChange(index, 'name', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button type="button" onClick={() => removeStudent(index)} variant="destructive" size="sm">
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="mt-4 flex space-x-2">
+            <Input
+              placeholder="Student ID"
+              value={newStudentId}
+              onChange={(e) => setNewStudentId(e.target.value)}
+            />
+            <Input
+              placeholder="Student Name"
+              value={newStudentName}
+              onChange={(e) => setNewStudentName(e.target.value)}
+            />
+            <Button type="button" onClick={addNewStudent}>Add Student</Button>
+          </div>
+          <p className="mt-2">Total Students: {studentData.length}</p>
+        </div>
+      )}
+      <Button type="submit" className="w-full">
+        {editingSubject ? 'Update Subject' : 'Add Subject'}
       </Button>
     </form>
-  );
+  )
 }

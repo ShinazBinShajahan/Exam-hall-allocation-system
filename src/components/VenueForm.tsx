@@ -32,23 +32,29 @@ export default function VenueForm({
       setClassroomName(editingVenue.classroomName);
       setRows(editingVenue.rows.toString());
       setColumns(editingVenue.columns.toString());
+    } else {
+      setRoomNumber("");
+      setClassroomName("");
+      setRows("");
+      setColumns("");
     }
   }, [editingVenue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomNumber && rows && columns) {
-      addVenue({
-        roomNumber,
-        classroomName,
-        rows: parseInt(rows, 10),
-        columns: parseInt(columns, 10),
-      });
-      setRoomNumber("");
-      setClassroomName("");
-      setRows("");
-      setColumns("");
-      if (editingVenue) onEditComplete();
+    const newVenue: Venue = {
+      roomNumber,
+      classroomName,
+      rows: parseInt(rows),
+      columns: parseInt(columns),
+    };
+    addVenue(newVenue);
+    setRoomNumber("");
+    setClassroomName("");
+    setRows("");
+    setColumns("");
+    if (editingVenue) {
+      onEditComplete();
     }
   };
 
@@ -60,19 +66,15 @@ export default function VenueForm({
           id="roomNumber"
           value={roomNumber}
           onChange={(e) => setRoomNumber(e.target.value)}
-          placeholder="Enter room number"
           required
-          className="mt-1"
         />
       </div>
       <div>
-        <Label htmlFor="classroomName">Classroom Name (Optional)</Label>
+        <Label htmlFor="classroomName">Classroom Name</Label>
         <Input
           id="classroomName"
           value={classroomName}
           onChange={(e) => setClassroomName(e.target.value)}
-          placeholder="Enter classroom name"
-          className="mt-1"
         />
       </div>
       <div>
@@ -82,9 +84,7 @@ export default function VenueForm({
           type="number"
           value={rows}
           onChange={(e) => setRows(e.target.value)}
-          placeholder="Enter number of rows"
           required
-          className="mt-1"
         />
       </div>
       <div>
@@ -94,12 +94,10 @@ export default function VenueForm({
           type="number"
           value={columns}
           onChange={(e) => setColumns(e.target.value)}
-          placeholder="Enter number of columns"
           required
-          className="mt-1"
         />
       </div>
-      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+      <Button type="submit" className="w-full">
         {editingVenue ? "Update Venue" : "Add Venue"}
       </Button>
     </form>
