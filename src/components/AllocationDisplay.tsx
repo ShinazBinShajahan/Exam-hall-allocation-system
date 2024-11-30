@@ -7,21 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type Allocation = {
-  roomNumber: string;
-  classroomName: string;
-  seats: Array<{
-    subjectCode: string;
-    subjectName: string;
-    batchName: string;
-    studentId: string;
-    studentName: string;
-  } | null>[];
-  totalStudents: number;
-  allocatedSubjects: Set<string>;
-  allocatedBatches: Set<string>;
-};
+import { Allocation } from "./ExamHallAllocation";
 
 type AllocationDisplayProps = {
   allocations: Allocation[];
@@ -45,7 +31,7 @@ export default function AllocationDisplay({
             <p>
               Subjects: {Array.from(allocation.allocatedSubjects).join(", ")}
             </p>
-            <p>Batches: {Array.from(allocation.allocatedBatches).join(", ")}</p>
+            <p>Batches: {Array.from(allocation.allocatedClasses).join(", ")}</p>
             <Table>
               <TableHeader>
                 <TableRow>

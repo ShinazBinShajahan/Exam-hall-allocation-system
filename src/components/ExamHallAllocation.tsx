@@ -20,9 +20,8 @@ type Student = {
 type Subject = {
   code: string
   name: string
-  batchName: string
-  students: number
-  studentData: Student[]
+  className: string
+  students: Student[]
 }
 
 type Venue = {
@@ -32,13 +31,13 @@ type Venue = {
   columns: number
 }
 
-type Allocation = {
+export type Allocation = {
   roomNumber: string
   classroomName: string
-  seats: Array<{ subjectCode: string; subjectName: string; batchName: string; studentId: string; studentName: string } | null>[]
+  seats: Array<{ subjectCode: string; subjectName: string; className: string; studentId: string; studentName: string } | null>[]
   totalStudents: number
   allocatedSubjects: Set<string>
-  allocatedBatches: Set<string>
+  allocatedClasses: Set<string>
 }
 
 export default function ExamHallAllocation() {
@@ -51,10 +50,10 @@ export default function ExamHallAllocation() {
   const [error, setError] = useState<string | null>(null)
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null)
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null)
-  const [unallocatedStudents, setUnallocatedStudents] = useState<{ subjectCode: string; subjectName: string; batchName: string; studentId: string; studentName: string }[]>([])
+  const [unallocatedStudents, setUnallocatedStudents] = useState<{ subjectCode: string; subjectName: string; className: string; studentId: string; studentName: string }[]>([])
 
   useEffect(() => {
-    const newTotalStudents = subjects.reduce((sum, subject) => sum + subject.students, 0)
+    const newTotalStudents = subjects.reduce((sum, subject) => sum + subject.students.length, 0)
     setTotalStudents(newTotalStudents)
   }, [subjects])
 
@@ -74,7 +73,6 @@ export default function ExamHallAllocation() {
 
   const editSubject = (subject: Subject) => {
     setEditingSubject(subject)
-    setStep(1)
   }
 
   const deleteSubject = (subjectCode: string) => {
@@ -92,7 +90,6 @@ export default function ExamHallAllocation() {
 
   const editVenue = (venue: Venue) => {
     setEditingVenue(venue)
-    setStep(2)
   }
 
   const deleteVenue = (roomNumber: string) => {
@@ -106,11 +103,11 @@ export default function ExamHallAllocation() {
     }
 
     const newAllocations: Allocation[] = []
-    const remainingStudents = subjects.flatMap(subject =>
-      subject.studentData.map(student => ({
+    let remainingStudents = subjects.flatMap(subject =>
+      subject.students.map(student => ({
         subjectCode: subject.code,
         subjectName: subject.name,
-        batchName: subject.batchName,
+        className: subject.className,
         studentId: student.id,
         studentName: student.name
       }))
@@ -123,7 +120,7 @@ export default function ExamHallAllocation() {
         seats: Array(venue.rows).fill(null).map(() => Array(venue.columns).fill(null)),
         totalStudents: 0,
         allocatedSubjects: new Set(),
-        allocatedBatches: new Set()
+        allocatedClasses: new Set()
       }
 
       const isDHRoom = venue.roomNumber.startsWith('DH')
@@ -153,7 +150,7 @@ export default function ExamHallAllocation() {
             allocation.seats[row][col] = student
             allocation.totalStudents++
             allocation.allocatedSubjects.add(student.subjectCode)
-            allocation.allocatedBatches.add(student.batchName)
+            allocation.allocatedClasses.add(student.className)
             remainingStudents.splice(studentIndex, 1)
           }
         }
@@ -196,7 +193,7 @@ export default function ExamHallAllocation() {
               <h2>${allocation.roomNumber} - ${allocation.classroomName}</h2>
               <p>Total Students: ${allocation.totalStudents}</p>
               <p>Subjects: ${Array.from(allocation.allocatedSubjects).join(', ')}</p>
-              <p>Batches: ${Array.from(allocation.allocatedBatches).join(', ')}</p>
+              <p>Classes: ${Array.from(allocation.allocatedClasses).join(', ')}</p>
               <table>
                 <thead>
                   <tr>
@@ -212,7 +209,9 @@ export default function ExamHallAllocation() {
                         <td>
                           ${seat ? `
                             ${seat.studentId}<br>
-                            ${seat.studentName}
+                            ${seat.studentName}<br>
+                            ${seat.subjectCode}<br>
+                            ${seat.className}
                           ` : ''}
                         </td>
                       `).join('')}
@@ -233,7 +232,7 @@ export default function ExamHallAllocation() {
               <p>Total Students: ${allocation.totalStudents}</p>
               <ul style="list-style-type: none; padding: 0;">
                 ${allocation.seats.flat().filter(Boolean).map(seat => `
-                  <li>${seat!.studentId}</li>
+                  <li>${seat!.studentId} (${seat!.className})</li>
                 `).join('')}
               </ul>
             </td>
@@ -279,7 +278,7 @@ export default function ExamHallAllocation() {
             allocation.seats[row][col] = student
             allocation.totalStudents++
             allocation.allocatedSubjects.add(student.subjectCode)
-            allocation.allocatedBatches.add(student.batchName)
+            allocation.allocatedClasses.add(student.className)
           }
         }
       }
@@ -338,7 +337,11 @@ export default function ExamHallAllocation() {
                           key={index}
                           className="flex flex-col sm:flex-row sm:items-center justify-between bg-gray-100 p-2 rounded-md"
                         >
-                          <span className="mb-2 sm:mb-0">{subject.code} - {subject.name} ({subject.batchName}) - {subject.students} students</span>
+                          <span className="mb-2 sm:mb-0">
+                            {subject.code} - {subject.name} ({subject.className})
+                            <br />
+                            Students: {subject.students.length}
+                          </span>
                           <div className="flex space-x-2">
                             <Button variant="ghost" size="sm" onClick={() => editSubject(subject)} className="text-blue-700 hover:text-blue-900">
                               <Edit className="h-4 w-4" />
@@ -411,13 +414,13 @@ export default function ExamHallAllocation() {
                   {subjects.map((subject, index) => (
                     <Card key={index}>
                       <CardHeader>
-                        <CardTitle className="text-blue-700">{subject.code} - {subject.name} ({subject.batchName})</CardTitle>
+                        <CardTitle className="text-blue-700">{subject.code} - {subject.name} ({subject.className})</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-gray-600">Number of students: {subject.students}</p>
+                        <p className="text-sm text-gray-600">Number of students: {subject.students.length}</p>
                         <p className="text-sm text-gray-600">Student Data:</p>
                         <ul className="text-sm break-words list-disc pl-5">
-                          {subject.studentData.map((student, idx) => (
+                          {subject.students.map((student, idx) => (
                             <li key={idx}>{student.id} - {student.name}</li>
                           ))}
                         </ul>
